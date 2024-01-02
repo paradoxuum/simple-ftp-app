@@ -69,16 +69,28 @@ class FileClient:
                 data = json.loads(message)
 
                 print("Generating authentication keys...")
-                server_public_numbers = ec.EllipticCurvePublicNumbers(data["x"], data["y"], ec.SECP384R1())
+                server_public_numbers = ec.EllipticCurvePublicNumbers(
+                    data["x"], data["y"], ec.SECP384R1()
+                )
                 self.network.encryption.generate_keys()
-                self.network.encryption.exchange_keys(server_public_numbers.public_key())
+                self.network.encryption.exchange_keys(
+                    server_public_numbers.public_key()
+                )
 
-                client_public_numbers = self.network.encryption.public_key.public_numbers()
-                self.network.push_message(self.connection, create_message("auth", {
-                    "authenticated": True,
-                    "x": client_public_numbers.x,
-                    "y": client_public_numbers.y
-                }))
+                client_public_numbers = (
+                    self.network.encryption.public_key.public_numbers()
+                )
+                self.network.push_message(
+                    self.connection,
+                    create_message(
+                        "auth",
+                        {
+                            "authenticated": True,
+                            "x": client_public_numbers.x,
+                            "y": client_public_numbers.y,
+                        },
+                    ),
+                )
 
                 confirm_msg = self.network.get_message(self.connection)
                 confirm_data = json.loads(confirm_msg)
@@ -93,8 +105,7 @@ class FileClient:
                 print("Failed to authenticate")
 
     def stop(self) -> None:
-        print("Stop client")
         self.running = False
         self.process_thread.join()
         self.network.stop()
-        print("Stopped")
+

@@ -20,7 +20,7 @@ class NetworkInterface:
         return sock
 
     def _listen(
-            self, sock: socket.socket, callback: Callable[[Connection], None]
+        self, sock: socket.socket, callback: Callable[[Connection], None]
     ) -> None:
         """Begins a loop which will listen for client connections for as
         long as the application is running
@@ -38,7 +38,7 @@ class NetworkInterface:
             callback(connection)
 
     def start_server(
-            self, ip: str, port: int, callback: Callable[[Connection], None]
+        self, ip: str, port: int, callback: Callable[[Connection], None]
     ) -> None:
         sock = self._make_socket()
         sock.bind((ip, port))
@@ -77,3 +77,4 @@ class NetworkInterface:
         self.connectionHandler.stop()
         for listener in self.listeners:
             listener.join()
+

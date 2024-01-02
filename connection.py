@@ -68,12 +68,19 @@ class ConnectionHandler:
             buffer_empty = False
             while not buffer_empty:
                 if connection.message_in_progress:
-                    if len(connection.network_buffer) >= connection.message_bytes_remaining:
+                    if (
+                        len(connection.network_buffer)
+                        >= connection.message_bytes_remaining
+                    ):
                         # Get all remaining data from the packet from the network buffer
-                        connection.message_buffer += connection.network_buffer[:connection.message_bytes_remaining]
+                        connection.message_buffer += connection.network_buffer[
+                            : connection.message_bytes_remaining
+                        ]
 
                         # Remove the data from the network buffer
-                        connection.network_buffer = connection.network_buffer[connection.message_bytes_remaining:]
+                        connection.network_buffer = connection.network_buffer[
+                            connection.message_bytes_remaining :
+                        ]
 
                         # Enqueue the message:
                         connection.input_buffer.put(connection.message_buffer)
@@ -84,18 +91,26 @@ class ConnectionHandler:
                         connection.message_buffer = b""
                     else:
                         connection.message_buffer += connection.network_buffer
-                        connection.message_bytes_remaining = connection.message_bytes_remaining - len(
-                            connection.network_buffer)
+                        connection.message_bytes_remaining = (
+                            connection.message_bytes_remaining
+                            - len(connection.network_buffer)
+                        )
                         connection.network_buffer = b""
                         buffer_empty = True
                 else:
-                    if len(connection.network_buffer) >= connection.packet_header_length:
+                    if (
+                        len(connection.network_buffer)
+                        >= connection.packet_header_length
+                    ):
                         # Get the length of the next packet
                         connection.message_bytes_remaining = int(
-                            connection.network_buffer[:connection.packet_header_length])
+                            connection.network_buffer[: connection.packet_header_length]
+                        )
 
                         # Remove the header from the network buffer
-                        connection.network_buffer = connection.network_buffer[connection.packet_header_length:]
+                        connection.network_buffer = connection.network_buffer[
+                            connection.packet_header_length :
+                        ]
                         connection.message_in_progress = True
                     else:
                         # We do not have a full packet header, wait for another incoming packet
@@ -111,7 +126,9 @@ class ConnectionHandler:
             return
 
         message = connection.output_buffer.get()
-        message_header = str(len(message)).zfill(connection.packet_header_length).encode("utf-8")
+        message_header = (
+            str(len(message)).zfill(connection.packet_header_length).encode("utf-8")
+        )
         connection.sock.sendall(message_header + message)
 
     def stop(self) -> None:
@@ -126,9 +143,7 @@ class ConnectionHandler:
         self.selector.register(sock, events, data=connection)
 
         self.connections.append(connection)
-        self.connection_map[str(ip)] = {
-            str(port): connection
-        }
+        self.connection_map[str(ip)] = {str(port): connection}
 
         print(f"Connection established to {ip}:{port}")
         return connection
@@ -157,7 +172,7 @@ class ConnectionHandler:
                 events = self.selector.select(timeout=None)
                 for key, mask in events:
                     if key.data is None:
-                        print("Add connection")
                         self.add_connection(cast(socket.socket, key.fileobj))
                         continue
                     self.service_connection(key, mask)
+

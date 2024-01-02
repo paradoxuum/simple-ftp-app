@@ -3,9 +3,11 @@ from typing import Optional
 
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
+from cryptography.hazmat.primitives.asymmetric.ec import (
+    EllipticCurvePublicKey,
+    EllipticCurvePrivateKey,
+)
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.ciphers.base import Mode
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 
@@ -16,10 +18,10 @@ class NetworkEncryption:
 
         self._private_key: Optional[EllipticCurvePrivateKey] = None
         self.public_key: Optional[EllipticCurvePublicKey] = None
-        self._shared_key: Optional[int] = None
+        self._shared_key: Optional[bytes] = None
 
         self._derived_key: Optional[bytes] = None
-        self._cipher: Optional[Cipher[Mode]] = None
+        self._cipher: Optional[Cipher] = None
 
     def is_enabled(self) -> bool:
         return self._enabled
@@ -40,7 +42,7 @@ class NetworkEncryption:
             algorithm=hashes.SHA256(),
             length=32,
             salt=None,
-            info=b"encrypted packet message"
+            info=b"encrypted packet message",
         ).derive(self._shared_key)
 
         iv = os.urandom(16)
@@ -66,3 +68,4 @@ class NetworkEncryption:
         decrypted_bytes = decryptor.update(message) + decryptor.finalize()
         unpadded_bytes = unpadder.update(decrypted_bytes) + unpadder.finalize()
         return unpadded_bytes.decode("utf-8")
+

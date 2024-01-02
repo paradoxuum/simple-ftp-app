@@ -19,7 +19,9 @@ class RemoveFilesDialog(wx.Dialog):
         panel = wx.Panel(self)
         vbox = wx.BoxSizer(wx.VERTICAL)
 
-        self.list_ctrl = wx.ListCtrl(self, size=(-1, 150), style=wx.LC_REPORT | wx.BORDER_SUNKEN)
+        self.list_ctrl = wx.ListCtrl(
+            self, size=(-1, 150), style=wx.LC_REPORT | wx.BORDER_SUNKEN
+        )
         self.list_ctrl.EnableCheckBoxes(True)
         create_list_columns(self.list_ctrl, 100)
 
@@ -70,7 +72,9 @@ class UploadPanel(wx.Panel):
         self.paths: List[str] = []
 
         main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.list_ctrl = wx.ListCtrl(self, size=(-1, 150), style=wx.LC_REPORT | wx.BORDER_SUNKEN)
+        self.list_ctrl = wx.ListCtrl(
+            self, size=(-1, 150), style=wx.LC_REPORT | wx.BORDER_SUNKEN
+        )
         create_list_columns(self.list_ctrl, 200)
         main_sizer.Add(self.list_ctrl, 0, wx.ALL | wx.EXPAND, 5)
 
@@ -113,7 +117,9 @@ class UploadPanel(wx.Panel):
         del self.path_map[path]
 
     def on_add_files(self, _) -> None:
-        with wx.FileDialog(self, "Add files", style=wx.FD_OPEN | wx.FD_MULTIPLE | wx.FD_FILE_MUST_EXIST) as dialog:
+        with wx.FileDialog(
+            self, "Add files", style=wx.FD_OPEN | wx.FD_MULTIPLE | wx.FD_FILE_MUST_EXIST
+        ) as dialog:
             if dialog.ShowModal() == wx.ID_CANCEL:
                 # User cancelled the dialog, so return early
                 return
@@ -133,3 +139,4 @@ class UploadPanel(wx.Panel):
 
     def on_upload(self, event) -> None:
         pass
+

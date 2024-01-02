@@ -74,7 +74,9 @@ class ConnectionProcessor:
             return None
 
         if "type" not in data:
-            self.network.push_message(self.connection, create_error("Missing 'type' field"))
+            self.network.push_message(
+                self.connection, create_error("Missing 'type' field")
+            )
             return None
 
         if data["type"] != expected_type:
@@ -88,15 +90,23 @@ class ConnectionProcessor:
             time.sleep(0.1)
 
             if self.state == State.Authenticate:
-                print(f"Generating authentication keys for {self.connection.ip}:{self.connection.port}")
+                print(
+                    f"Generating authentication keys for {self.connection.ip}:{self.connection.port}"
+                )
                 self.network.encryption.generate_keys()
                 public_numbers = self.network.encryption.public_key.public_numbers()
 
-                self.network.push_message(self.connection, create_message("auth", {
-                    "authenticated": False,
-                    "x": public_numbers.x,
-                    "y": public_numbers.y
-                }))
+                self.network.push_message(
+                    self.connection,
+                    create_message(
+                        "auth",
+                        {
+                            "authenticated": False,
+                            "x": public_numbers.x,
+                            "y": public_numbers.y,
+                        },
+                    ),
+                )
 
                 # Wait for client authentication data
                 data = self._get_message("auth")
@@ -104,14 +114,20 @@ class ConnectionProcessor:
                     continue
 
                 # Exchange keys and retrieve shared key
-                client_public_numbers = EllipticCurvePublicNumbers(data["x"], data["y"], ec.SECP384R1())
-                self.network.encryption.exchange_keys(client_public_numbers.public_key())
-                print(f"Successfully authenticated {self.connection.ip}:{self.connection.port}")
+                client_public_numbers = EllipticCurvePublicNumbers(
+                    data["x"], data["y"], ec.SECP384R1()
+                )
+                self.network.encryption.exchange_keys(
+                    client_public_numbers.public_key()
+                )
+                print(
+                    f"Successfully authenticated {self.connection.ip}:{self.connection.port}"
+                )
 
                 # Send a message back to the client indicating that authentication is complete
-                self.network.push_message(self.connection, create_message("auth", {
-                    "authenticated": True
-                }))
+                self.network.push_message(
+                    self.connection, create_message("auth", {"authenticated": True})
+                )
                 self.network.encryption.set_enabled(True)
 
                 self.state = State.Idle
@@ -165,3 +181,4 @@ class FileServer:
 
         for processor in self.processors:
             processor.stop()
+

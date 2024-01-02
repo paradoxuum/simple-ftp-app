@@ -7,9 +7,8 @@ from threading import Thread
 from typing import Optional
 
 from cryptography.hazmat.primitives.asymmetric import ec
-
 from message import create_message
-from network import Connection, NetworkInterface
+from network import ClientInterface, Connection
 
 
 class State(Enum):
@@ -32,7 +31,7 @@ class FileClient:
         self.host = host
         self.port = port
 
-        self.network = NetworkInterface()
+        self.network = ClientInterface(host, port)
         self.connection: Optional[Connection] = None
         self.running = True
         self._state = State.Authenticate
@@ -47,7 +46,7 @@ class FileClient:
 
     def process(self) -> None:
         try:
-            self.connection = self.network.start_client(self.host, self.port)
+            self.connection = self.network.start()
         except Exception as err:
             self.running = False
             # TODO Stop threads, maybe implement monitor thread using "errored" field
@@ -72,14 +71,13 @@ class FileClient:
                 server_public_numbers = ec.EllipticCurvePublicNumbers(
                     data["x"], data["y"], ec.SECP384R1()
                 )
-                self.network.encryption.generate_keys()
+
+                public_key = self.network.encryption.generate_keys()
                 self.network.encryption.exchange_keys(
                     server_public_numbers.public_key()
                 )
 
-                client_public_numbers = (
-                    self.network.encryption.public_key.public_numbers()
-                )
+                client_public_numbers = public_key.public_numbers()
                 self.network.push_message(
                     self.connection,
                     create_message(
@@ -93,6 +91,8 @@ class FileClient:
                 )
 
                 confirm_msg = self.network.get_message(self.connection)
+                if confirm_msg is None:
+                    return
                 confirm_data = json.loads(confirm_msg)
 
                 if "authenticated" in confirm_data and confirm_data["authenticated"]:
@@ -106,6 +106,8 @@ class FileClient:
 
     def stop(self) -> None:
         self.running = False
+        if self.connection is not None:
+            self.connection.input_buffer.put(None)
         self.process_thread.join()
         self.network.stop()
 

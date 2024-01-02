@@ -5,13 +5,12 @@ from dataclasses import dataclass
 from enum import Enum
 from json import JSONDecodeError
 from threading import Thread
-from typing import List, Optional, Dict, Generic, TypeVar, Any
+from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicNumbers
-
 from message import create_error, create_message
-from network import Connection, NetworkInterface
+from network import Connection, ServerInterface
 
 
 class State(Enum):
@@ -38,7 +37,7 @@ class Result(Generic[T]):
 
 
 class ConnectionProcessor:
-    def __init__(self, network: NetworkInterface, connection: Connection) -> None:
+    def __init__(self, network: ServerInterface, connection: Connection) -> None:
         self.network = network
         self.connection = connection
 
@@ -93,9 +92,8 @@ class ConnectionProcessor:
                 print(
                     f"Generating authentication keys for {self.connection.ip}:{self.connection.port}"
                 )
-                self.network.encryption.generate_keys()
-                public_numbers = self.network.encryption.public_key.public_numbers()
-
+                public_key = self.network.encryption.generate_keys()
+                public_numbers = public_key.public_numbers()
                 self.network.push_message(
                     self.connection,
                     create_message(
@@ -135,8 +133,6 @@ class ConnectionProcessor:
                 message = self._get_message("error")
                 print("Received:", message)
 
-        self.network.stop()
-
 
 class FileServer:
     SYS_RAND = secrets.SystemRandom()
@@ -145,7 +141,7 @@ class FileServer:
         self.host = host
         self.port = port
 
-        self.network = NetworkInterface()
+        self.network = ServerInterface(host, port)
         self.processors: List[ConnectionProcessor] = []
         self.running = True
 
@@ -154,9 +150,9 @@ class FileServer:
         processor.start()
         self.processors.append(processor)
 
-    def process(self) -> None:
+    def start(self) -> None:
         try:
-            self.network.start_server(self.host, self.port, self.handle_connection)
+            self.network.start(self.handle_connection)
             print(f"Started server on {self.host}:{self.port}")
         except Exception as err:
             self.stop()
@@ -166,19 +162,16 @@ class FileServer:
             print(err)
             return
 
-        # while self.running:
-        #     print("\nClients:")
-        #     print(self.network.get_clients())
-        #
-        #     message = input("Enter message: ")
-        #     ip = input("Enter client IP: ")
-        #     port = input("Enter client port: ")
-        #     self.network.push_message(ip, int(port), message)
+        try:
+            while self.running:
+                pass
+        except KeyboardInterrupt:
+            self.stop()
 
     def stop(self) -> None:
         self.running = False
         self.network.stop()
-
         for processor in self.processors:
+            processor.connection.input_buffer.put(None)
             processor.stop()
 

@@ -29,9 +29,10 @@ class NetworkEncryption:
     def set_enabled(self, enabled: bool) -> None:
         self._enabled = enabled
 
-    def generate_keys(self) -> None:
+    def generate_keys(self) -> EllipticCurvePublicKey:
         self._private_key = ec.generate_private_key(ec.SECP384R1())
         self.public_key = self._private_key.public_key()
+        return self.public_key
 
     def exchange_keys(self, public_key: EllipticCurvePublicKey) -> None:
         if self._private_key is None:

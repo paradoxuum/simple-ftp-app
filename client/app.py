@@ -16,7 +16,11 @@ class FileApp(wx.App):
         self.client.start()
 
     def start(self) -> None:
-        self.MainLoop()
+        try:
+            self.MainLoop()
+        except KeyboardInterrupt:
+            self.Destroy()
+            self.client.stop()
 
     def OnInit(self):
         self.frame = MainFrame()
@@ -26,7 +30,6 @@ class FileApp(wx.App):
         return True
 
     def OnExit(self):
-        print(self.client)
         if self.client is not None:
             self.client.stop()
         return 0

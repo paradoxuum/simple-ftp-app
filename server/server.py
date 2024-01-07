@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from threading import Thread
 from typing import Generic, List, Optional, TypeVar, Dict
 
-from connection import ConnectionData, log_connection
-from network import ServerInterface
 from server.server_state import Authenticate, ServerState, IDLE_STATE, ServerDataManager, ServerStateContext
-from state import EventMessage, EventMessageType
+from shared.connection import ConnectionData, log_connection
+from shared.network import ServerInterface
+from shared.state import EventMessage, EventMessageType
 
 
 @dataclass

@@ -8,11 +8,11 @@ from typing import Optional, List, Dict
 from cryptography.hazmat.primitives.asymmetric import ec
 from pydantic import ValidationError, BaseModel
 
-from connection import log_connection, Connection
-from data import AuthConfirmation, AuthRequest, UploadStart, UploadFile, UploadResult, ViewFilesRequest, \
+from shared.connection import log_connection, Connection
+from shared.data import AuthConfirmation, AuthRequest, UploadStart, UploadFile, UploadResult, ViewFilesRequest, \
     ViewFilesResponse, LoginRequest, PrivilegeLevel, UserData, RemoveFilesRequest, LoginResponse, Interaction, \
     BasicResponse, LogoutRequest, UserView, AdminData, ViewAdminDataResponse, ViewAdminDataRequest
-from state import StateContext
+from shared.state import StateContext
 
 data_path = Path(__file__).parent / "server_data"
 files_path = data_path / "files"

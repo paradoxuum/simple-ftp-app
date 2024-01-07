@@ -2,7 +2,7 @@ import wx
 
 from client.client import FileClient
 from client.ui.MainFrame import MainFrame
-from state import EventMessage, EventMessageType
+from shared.state import EventMessage, EventMessageType
 
 
 class FileApp(wx.App):

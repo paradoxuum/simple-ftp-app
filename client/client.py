@@ -6,9 +6,9 @@ from threading import Thread
 from typing import Callable, Optional, List
 
 from client.client_state import Authenticate, ClientState, ClientStateContext, ClientDataManager, IDLE_STATE
-from connection import ConnectionData, log_connection
-from network import ClientInterface
-from state import EventMessage, create_error_event, EventMessageType
+from shared.connection import ConnectionData, log_connection
+from shared.network import ClientInterface
+from shared.state import EventMessage, create_error_event, EventMessageType
 
 
 @dataclass

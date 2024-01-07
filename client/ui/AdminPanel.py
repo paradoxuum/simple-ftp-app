@@ -6,7 +6,7 @@ import wx.lib.newevent
 
 from client.client import FileClient
 from client.client_state import ViewFiles
-from data import UserView, AdminData, Interaction, PrivilegeLevel
+from shared.data import UserView, AdminData, Interaction, PrivilegeLevel
 
 FileUpdateEvent, EVT_FILE_UPDATE_EVENT = wx.lib.newevent.NewEvent()
 

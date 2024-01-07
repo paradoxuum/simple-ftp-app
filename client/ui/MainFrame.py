@@ -12,7 +12,7 @@ from client.ui.AdminPanel import AdminPanel
 from client.ui.FileBrowserPanel import FileBrowserPanel
 from client.ui.LoginDialog import LoginDialog
 from client.ui.UploadPanel import UploadPanel
-from data import UserData, PrivilegeLevel, AdminData
+from shared.data import UserData, PrivilegeLevel, AdminData
 
 StatusEvent, EVT_STATUS_EVENT = wx.lib.newevent.NewEvent()
 

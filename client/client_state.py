@@ -6,11 +6,12 @@ from typing import List, Optional, Callable, Tuple
 from cryptography.hazmat.primitives.asymmetric import ec
 from pydantic import ValidationError
 
-from connection import log_connection
-from data import AuthConfirmation, AuthRequest, UploadStart, UploadFile, UploadEnd, UploadResult, ViewFilesRequest, \
+from shared.connection import log_connection
+from shared.data import AuthConfirmation, AuthRequest, UploadStart, UploadFile, UploadEnd, UploadResult, \
+    ViewFilesRequest, \
     ViewFilesResponse, LoginRequest, BasicResponse, RemoveFilesRequest, UserData, LoginResponse, LogoutRequest, \
     ViewAdminDataRequest, ViewAdminDataResponse, AdminData
-from state import StateContext, create_error_event, create_success_event
+from shared.state import StateContext, create_error_event, create_success_event
 
 
 class ClientDataManager:

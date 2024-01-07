@@ -1,11 +1,10 @@
-import os
 from typing import Optional
 
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.ec import (
-    EllipticCurvePublicKey,
     EllipticCurvePrivateKey,
+    EllipticCurvePublicKey,
 )
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -46,27 +45,32 @@ class NetworkEncryption:
             info=b"encrypted packet message",
         ).derive(self._shared_key)
 
-        iv = os.urandom(16)
-        self._cipher = Cipher(algorithms.AES(derived_key), modes.CBC(iv))
+        cbc_vec = HKDF(
+            algorithm=hashes.SHA256(),
+            length=16,
+            salt=None,
+            info=b"CBC vector",
+        ).derive(self._shared_key)
 
-    def encrypt(self, message: str) -> bytes:
+        self._cipher = Cipher(algorithms.AES(derived_key), modes.CBC(cbc_vec))
+
+    def encrypt(self, message: bytes) -> bytes:
         if not self._enabled or self._cipher is None:
-            return message.encode("utf-8")
+            return message
 
         encryptor = self._cipher.encryptor()
         padder = self.padding.padder()
 
-        padded_data = padder.update(message.encode()) + padder.finalize()
+        padded_data = padder.update(message) + padder.finalize()
         return encryptor.update(padded_data) + encryptor.finalize()
 
-    def decrypt(self, message: bytes) -> str:
+    def decrypt(self, message: bytes) -> bytes:
         if not self._enabled or self._cipher is None:
-            return message.decode("utf-8")
+            return message
 
         decryptor = self._cipher.decryptor()
         unpadder = self.padding.unpadder()
 
         decrypted_bytes = decryptor.update(message) + decryptor.finalize()
         unpadded_bytes = unpadder.update(decrypted_bytes) + unpadder.finalize()
-        return unpadded_bytes.decode("utf-8")
-
+        return unpadded_bytes

@@ -1,20 +1,14 @@
-import json
+import logging
 import secrets
 import time
 from dataclasses import dataclass
-from enum import Enum
 from threading import Thread
-from typing import Optional
+from typing import Callable, Optional, List
 
-from cryptography.hazmat.primitives.asymmetric import ec
-from message import create_message
-from network import ClientInterface, Connection
-
-
-class State(Enum):
-    Authenticate = 1
-    Idle = 2
-    Error = 99
+from client.client_state import Authenticate, ClientState, ClientStateContext, ClientDataManager, IDLE_STATE
+from connection import ConnectionData, log_connection
+from network import ClientInterface
+from state import EventMessage, create_error_event, EventMessageType
 
 
 @dataclass
@@ -32,82 +26,79 @@ class FileClient:
         self.port = port
 
         self.network = ClientInterface(host, port)
-        self.connection: Optional[Connection] = None
+        self.data: Optional[ConnectionData] = None
+        self.data_manager = ClientDataManager()
+        self.event_handler: Optional[Callable[[EventMessage], None]] = None
+
         self.running = True
-        self._state = State.Authenticate
+        self.aborted = False
+        self.state: ClientState = Authenticate()
+        self.next_states: List[ClientState] = []
 
         self.process_thread = Thread(target=self.process)
 
-    def set_state(self, state: State) -> None:
-        self._state = state
+    def set_event_handler(self, handler: Callable[[EventMessage], None]) -> None:
+        self.event_handler = handler
+
+    def handle_event(self, event: EventMessage) -> None:
+        if event.message_type == EventMessageType.Error:
+            logging.error(event.message)
+        else:
+            log_connection(self.data.connection, event.message)
+
+        if self.event_handler is None:
+            return
+        self.event_handler(event)
+
+    def enqueue_state(self, state: ClientState) -> None:
+        self.next_states.append(state)
 
     def start(self) -> None:
         self.process_thread.start()
 
     def process(self) -> None:
         try:
-            self.connection = self.network.start()
+            self.data = self.network.start()
         except Exception as err:
-            self.running = False
-            # TODO Stop threads, maybe implement monitor thread using "errored" field
-            print(
-                f"An error occurred when establishing a connection to {self.host}:{self.port}"
-            )
-            print(err)
+            logging.error(err)
+            if self.running:
+                self.handle_event(create_error_event(
+                    f"An error occurred when establishing a connection to {self.host}:{self.port}"
+                ))
+
             return
+
+        context = ClientStateContext(
+            network=self.network, data=self.data, send_event=self.handle_event, enqueue_state=self.enqueue_state,
+            client_data=self.data_manager
+        )
 
         while self.running:
             time.sleep(0.1)
-            if self.connection is None:
+            if self.data is None:
                 continue
 
-            if self._state == State.Authenticate:
-                message = self.network.get_message(self.connection)
-                if message is None:
-                    return
-                data = json.loads(message)
+            try:
+                self.state.run(context)
+            except Exception as e:
+                logging.error("An error occurred", exc_info=e)
+                self.handle_event(create_error_event("An error occurred."))
 
-                print("Generating authentication keys...")
-                server_public_numbers = ec.EllipticCurvePublicNumbers(
-                    data["x"], data["y"], ec.SECP384R1()
-                )
+            next_state: ClientState
+            if len(self.next_states) > 0:
+                next_state = self.next_states.pop(0)
+            else:
+                next_state = IDLE_STATE
 
-                public_key = self.network.encryption.generate_keys()
-                self.network.encryption.exchange_keys(
-                    server_public_numbers.public_key()
-                )
+            self.state = next_state
 
-                client_public_numbers = public_key.public_numbers()
-                self.network.push_message(
-                    self.connection,
-                    create_message(
-                        "auth",
-                        {
-                            "authenticated": True,
-                            "x": client_public_numbers.x,
-                            "y": client_public_numbers.y,
-                        },
-                    ),
-                )
-
-                confirm_msg = self.network.get_message(self.connection)
-                if confirm_msg is None:
-                    return
-                confirm_data = json.loads(confirm_msg)
-
-                if "authenticated" in confirm_data and confirm_data["authenticated"]:
-                    self.network.encryption.set_enabled(True)
-                    self.set_state(State.Idle)
-                    print("Successfully authenticated")
-                    return
-
-                # TODO Throw error?
-                print("Failed to authenticate")
+    def abort(self) -> None:
+        self.aborted = True
 
     def stop(self) -> None:
         self.running = False
-        if self.connection is not None:
-            self.connection.input_buffer.put(None)
+        if self.data is not None:
+            self.data.connection.input_buffer.put(None)
+
         self.process_thread.join()
         self.network.stop()
-

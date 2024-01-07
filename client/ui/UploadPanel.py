@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Dict
+from typing import Callable, Dict, List
 
 import wx
 
@@ -65,7 +65,7 @@ class RemoveFilesDialog(wx.Dialog):
 
 
 class UploadPanel(wx.Panel):
-    def __init__(self, parent) -> None:
+    def __init__(self, parent, on_upload: Callable[[List[str]], None]) -> None:
         super().__init__(parent)
 
         self.path_map: Dict[str, int] = {}
@@ -85,7 +85,7 @@ class UploadPanel(wx.Panel):
         remove_files_btn.Bind(wx.EVT_BUTTON, self.on_remove_files)
 
         upload_btn = wx.Button(self, label="Upload")
-        upload_btn.Bind(wx.EVT_BUTTON, self.on_upload)
+        upload_btn.Bind(wx.EVT_BUTTON, lambda event: on_upload(self.paths))
 
         main_sizer.Add(add_files_btn, 0, wx.ALL | wx.EXPAND, 5)
         main_sizer.Add(remove_files_btn, 0, wx.ALL | wx.EXPAND, 5)
@@ -118,7 +118,7 @@ class UploadPanel(wx.Panel):
 
     def on_add_files(self, _) -> None:
         with wx.FileDialog(
-            self, "Add files", style=wx.FD_OPEN | wx.FD_MULTIPLE | wx.FD_FILE_MUST_EXIST
+                self, "Add files", style=wx.FD_OPEN | wx.FD_MULTIPLE | wx.FD_FILE_MUST_EXIST
         ) as dialog:
             if dialog.ShowModal() == wx.ID_CANCEL:
                 # User cancelled the dialog, so return early
@@ -136,7 +136,3 @@ class UploadPanel(wx.Panel):
             for i in dialog.get_checked():
                 self.remove_path(i)
             self.update_list()
-
-    def on_upload(self, event) -> None:
-        pass
-

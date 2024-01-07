@@ -1,27 +1,38 @@
-from __future__ import annotations
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Callable
 
-from abc import ABC, abstractmethod
-from typing import TypeVar, Generic
-
-from connection import Connection
+from connection import ConnectionData
 from network import NetworkInterface
 
-T = TypeVar("T")
+
+class EventMessageType(Enum):
+    Success = 1
+    Info = 2
+    Error = 3
 
 
-class State(ABC, Generic[T]):
-    def __init__(self, network: NetworkInterface) -> None:
-        self.network = network
-
-    @abstractmethod
-    def run(self, connection: Connection) -> None:
-        pass
-
-    @abstractmethod
-    def next(self, value: T) -> State:
-        pass
+@dataclass(frozen=True)
+class EventMessage:
+    message_type: EventMessageType
+    message: str
 
 
-class StateMachine:
-    def __init__(self, initial_state: State) -> None:
-        self.initial_state = initial_state
+def create_success_event(message: str) -> EventMessage:
+    return EventMessage(EventMessageType.Success, message)
+
+
+def create_info_event(message: str) -> EventMessage:
+    return EventMessage(EventMessageType.Info, message)
+
+
+def create_error_event(message: str) -> EventMessage:
+    return EventMessage(EventMessageType.Error, message)
+
+
+@dataclass
+class StateContext:
+    network: NetworkInterface
+    data: ConnectionData
+    send_event: Callable[[EventMessage], None]
+    enqueue_state: Callable[[Any], None]

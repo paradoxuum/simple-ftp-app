@@ -3,6 +3,7 @@ import sys
 from argparse import ArgumentParser
 
 from client.app import FileApp
+
 from server.server import FileServer
 
 
@@ -31,8 +32,7 @@ def main():
 
     args = parser.parse_args(sys.argv[1:])
 
-    if args.verbose:
-        logging.getLogger().setLevel(logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
     if args.command == "client":
         app = FileApp()

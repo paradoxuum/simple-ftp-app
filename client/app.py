@@ -1,19 +1,21 @@
-from typing import Optional
-
 import wx
 
 from client.client import FileClient
-from client.ui.main import MainFrame
+from client.ui.MainFrame import MainFrame
+from state import EventMessage, EventMessageType
 
 
 class FileApp(wx.App):
-    def __init__(self):
+    def __init__(self, host: str = "127.0.0.1", port: int = 50_000):
         super().__init__()
 
-        self.frame: Optional[MainFrame] = None
+        self.client = FileClient(host, port)
+        self.client.set_event_handler(self.handle_event)
+        self.frame = MainFrame(self.client)
 
-        self.client = FileClient()
         self.client.start()
+        self.frame.Show()
+        self.SetTopWindow(self.frame)
 
     def start(self) -> None:
         try:
@@ -22,14 +24,15 @@ class FileApp(wx.App):
             self.Destroy()
             self.client.stop()
 
-    def OnInit(self):
-        self.frame = MainFrame()
-        self.frame.Show()
+    @staticmethod
+    def handle_event(event: EventMessage) -> None:
+        caption = "Info"
+        style = wx.OK | wx.ICON_INFORMATION
+        if event.message_type == EventMessageType.Success:
+            caption = "Success"
+        elif event.message_type == EventMessageType.Error:
+            style = wx.OK | wx.ICON_ERROR
 
-        self.SetTopWindow(self.frame)
-        return True
-
-    def OnExit(self):
-        if self.client is not None:
-            self.client.stop()
-        return 0
+        dialog = wx.MessageDialog(None, event.message, caption, style)
+        dialog.ShowModal()
+        dialog.Destroy()
